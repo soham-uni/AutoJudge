@@ -1,38 +1,57 @@
 import pandas as pd
 import json
+import re
+import nltk
+from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
+
+nltk.download('stopwords')
+nltk.download('wordnet')
+nltk.download('omw-1.4')
+
+def clean_problem_text(text):
+    text = text.lower()
+    
+    # 2. Regex Cleaning
+    text = re.sub(r'<.*?>', '', text)
+    text = re.sub(r'[^a-zA-Z0-9\s]', ' ', text)
+    
+    # 3. Tokenization & Stopword Removal
+    stop_words = set(stopwords.words('english'))
+    words = text.split()
+    
+    # 4. Lemmatization: 
+    lemmatizer = WordNetLemmatizer()
+    cleaned_words = [lemmatizer.lemmatize(w) for w in words if w not in stop_words]
+    
+    return " ".join(cleaned_words)
 
 def load_and_combine(file_path):
-    # 1. Load the JSONL file
     data = []
     with open(file_path, 'r', encoding='utf-8') as f:
         for line in f:
             data.append(json.loads(line))
     
     df = pd.DataFrame(data)
-    
-    # 2. Handle missing values (if any) [cite: 32]
     df = df.fillna("")
-    
-    # 3. Combine text fields into one single text input [cite: 52]
-    # We combine title, description, input_description, and output_description [cite: 16, 17, 18, 19]
     df['combined_text'] = (
         df['title'] + " " + 
         df['description'] + " " + 
         df['input_description'] + " " + 
         df['output_description']
     )
+
+    print("Starting text cleaning (Phase 2)...")
+    df['cleaned_text'] = df['combined_text'].apply(clean_problem_text) 
     
-    # 4. Filter for only what we need for the model
-    # Features: combined_text
-    # Targets: problem_class (classification) and problem_score (regression) [cite: 4, 5]
-    final_df = df[['combined_text', 'problem_class', 'problem_score']]
-    
+    final_df = df[['cleaned_text', 'problem_class', 'problem_score']]
     return final_df
 
-# Usage
 dataset_path = 'data/problems_data.jsonl'
 processed_df = load_and_combine(dataset_path)
 
-print("Phase 1 Complete!")
-print(processed_df.head())
-print(len(processed_df), "rows processed.")
+print("Phase 1 & 2 Complete!")
+print("\n--- Raw vs Cleaned Example ---")
+print("Original:", processed_df.index[0]) 
+print("Cleaned:", processed_df['cleaned_text'].iloc[0][:150], "...") 
+print("\nTotal rows:", len(processed_df))
