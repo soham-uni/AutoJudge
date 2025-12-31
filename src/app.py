@@ -20,19 +20,25 @@ def load_assets():
 
 try:
     clf, reg, tfidf = load_assets()
-except Exception as e:
+except Exception:
     st.error("Models not found! Please run train.py first.")
     st.stop()
 
 # 3. Preprocessing Function
 def clean_text(text):
     text = text.lower()
-    text = re.sub(r'[^a-zA-Z0-9\s]', ' ', text)
+    text = re.sub(r'[^a-zA-Z0-9\s\^\*]', ' ', text)
     words = text.split()
     lemmatizer = WordNetLemmatizer()
     stop_words = set(stopwords.words('english'))
     cleaned = [lemmatizer.lemmatize(w) for w in words if w not in stop_words]
     return " ".join(cleaned)
+
+# Training-consistent constraint feature
+def get_complexity_signal(text):
+    matches = re.findall(r'(?:10(?:\^|\*\*|e)|1000)\s*(\d+)', text)
+    magnitudes = [int(m) for m in matches if m.isdigit()]
+    return max(magnitudes) if magnitudes else 0
 
 # 4. Styled UI Header
 st.markdown("""
@@ -46,7 +52,7 @@ st.markdown("""
         text-align: center;
     }
     </style>
-    """, unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
 st.title("AutoJudge: CP Difficulty Predictor")
 st.write("Paste your competitive programming problem details below to predict its difficulty level and rating.")
@@ -64,30 +70,32 @@ with col2:
         if not desc or not inp_desc:
             st.warning("Please provide problem details.")
         else:
-            # Combine and Clean
             combined = f"{desc} {inp_desc} {out_desc}"
             cleaned = clean_text(combined)
-            
-            # Feature Extraction (Phase 3 logic)
+
+            # === Feature Extraction (MATCHES TRAINING EXACTLY) ===
             tfidf_feat = tfidf.transform([cleaned])
+
             text_len = len(cleaned)
             math_symbols = len(re.findall(r'[+\-*/%=<>!^]', combined))
-            
-            keywords = ['graph', 'dp', 'tree', 'segment', 'dijkstra', 'shortest', 'query', 'array', 'string', 'recursion']
+            max_constraint = get_complexity_signal(combined)
+
+            keywords = ['graph', 'dp', 'tree', 'segment', 'dijkstra', 'shortest', 'query', 
+                        'array', 'string', 'recursion', 'complexity', 'optimal', 'greedy',
+                        'bitwise', 'modulo', 'combinatorics', 'probability', 'geometry']
+
             kw_feats = [1 if k in cleaned else 0 for k in keywords]
-            
-            # Match training feature shape
-            custom_feats = np.array([[text_len, math_symbols] + kw_feats])
+
+            custom_feats = np.array([[text_len, math_symbols, max_constraint] + kw_feats])
+
             X_input = hstack([tfidf_feat, custom_feats])
-            
+
             # 5. Prediction Logic
             class_idx = clf.predict(X_input)[0]
             score_pred = reg.predict(X_input)[0]
-            
-            # FIX: Define the labels dictionary
+
             labels = {0: "Easy", 1: "Medium", 2: "Hard"}
-            
-            # UI Display
+
             st.markdown(f"""
                 <div class="prediction-card">
                     <p style="margin:0; color: #888;">PREDICTED CLASS</p>
@@ -96,5 +104,5 @@ with col2:
                     <h2 style="color: #4bafff;">{score_pred:.2f}</h2>
                 </div>
             """, unsafe_allow_html=True)
-            
+
             st.progress(min(max(float(score_pred) / 10.0, 0.0), 1.0))
