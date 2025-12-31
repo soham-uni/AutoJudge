@@ -1,64 +1,163 @@
-# AutoJudge: Predicting Programming Problem Difficulty ⚖️
+# AutoJudge — Programming Problem Difficulty Predictor
 
-**AutoJudge** is an intelligent system built to automatically classify and score programming problems (like those found on Codeforces, Kattis, or CodeChef) based strictly on their textual descriptions. By analyzing the linguistic complexity and domain-specific keywords, the system provides both a categorical difficulty class and a numerical score.
+## Project Overview
 
-## 🎯 Project Objectives
-The goal of this project was to build an automated pipeline that replaces human-dependent judgment with a machine learning model:
-* **Predict Difficulty Class**: Classify problems as **Easy, Medium, or Hard**.
-* **Predict Difficulty Score**: Assign a precise **numerical difficulty value**.
-* **Text-Based Logic**: Work using only textual information from the problem, input, and output descriptions.
-* **Web Interface**: Provide a user-friendly UI for real-time predictions.
+AutoJudge is an intelligent machine learning system that automatically predicts the difficulty of competitive programming problems using only their textual description.
 
-## 🛠️ Tech Stack
-* **Core Logic**: Python 3.x
-* **ML Frameworks**: Scikit-learn (Random Forest), XGBoost (Gradient Boosting) 
-* **Natural Language Processing**: NLTK (Stopword removal, Lemmatization)
-* **Frontend**: Streamlit (Simple Web UI) 
-* **Data Handling**: Pandas, NumPy, Scipy (Sparse matrices)
+It predicts:
+- **Problem Class:** Easy / Medium / Hard *(Classification task)*
+- **Problem Score:** A continuous numerical difficulty value *(Regression task)*
 
-## 🧠 Methodology & Feature Engineering
-A "Two-Stage" machine learning pipeline was implemented to handle both classification and regression tasks:
+The goal is to replicate how online judges (Codeforces, CodeChef, Kattis, etc.) estimate problem difficulty — but automatically, without human feedback.
 
-### 1. Data Preprocessing
-* **Integration**: Combined Title, Description, Input Description, and Output Description into a single corpus.
-* **Cleaning**: Handled missing values and removed linguistic noise using NLTK.
+---
 
-### 2. Feature Extraction
-* **TF-IDF Vectors**: Converted text into numerical features using **TF-IDF with Bi-grams**.
-* **Custom CP Features**:
-    * **Keyword Frequency**: Detection of algorithms like *Graph, DP, Tree, Dijkstra, and Recursion*.
-    * **Mathematical Symbol Density**: Counted symbols (+, -, *, ^, etc.) as a proxy for technical complexity.
-    * **Text Metadata**: Calculated raw text length to measure description detail.
+## 📂 Dataset Used
 
+A custom dataset of programming problems where each sample contains:
 
+- title  
+- description  
+- input_description  
+- output_description  
+- problem_class (Easy / Medium / Hard)  
+- problem_score (numerical difficulty)
 
-### 3. Model Architecture
-* **Classification**: Utilized a **Random Forest Classifier** to predict the `problem_class`.
-* **Regression**: Utilized **XGBoost (Gradient Boosting)** to predict the `problem_score` with higher precision.
+Dataset file:
+```
+data/problems_data.jsonl
+```
 
+---
 
+## 🧠 Approach & Models Used
+
+### 🔹 Data Preprocessing
+- Combined all text fields into a single input
+- Text cleaning, normalization, stopword removal, lemmatization
+- Handled missing values
+
+### 🔹 Feature Extraction
+Each problem is converted into a numerical feature vector using:
+- **TF-IDF Vectorization** (1–3 n-grams)
+- Text length
+- Mathematical symbol frequency
+- Constraint detection (e.g., 10^5, 10^9, etc.)
+- Competitive programming keyword indicators  
+  (graph, dp, tree, greedy, dijkstra, etc.)
+
+### 🔹 Models
+
+| Task | Model |
+|-----|------|
+Classification | XGBoost Classifier |
+Regression | XGBoost Regressor |
+Text Representation | TF-IDF Vectorizer |
+
+To handle class imbalance, **SMOTE (Synthetic Minority Oversampling Technique)** was applied **only to the classifier training set**, improving classification performance significantly.  
+The regression model was trained on the original dataset to preserve the true numeric difficulty distribution.
+
+---
 
 ## 📊 Evaluation Metrics
-The system was evaluated using standard industry metrics:
-* **Classification**: Accuracy and Confusion Matrix.
-* **Regression**: Mean Absolute Error (MAE) and Root Mean Squared Error (RMSE).
 
-## 💻 Web UI Usage
-The interface allows users to:
-1. **Paste**: Problem Description, Input Description, and Output Description.
-2. **Predict**: Click the "Predict" button to run the real-time inference engine.
-3. **View**: Displayed results for the predicted difficulty class and score.
+### 🧪 Classification
+- **Accuracy:** ~67%  
+- Major improvement after SMOTE (previously ~55%)
 
+### 📐 Regression
+- **MAE:** 1.67  
+- **RMSE:** 2.00
 
+The classifier and regressor are trained independently as required.  
+Near class boundaries, the two models may disagree — reflecting real ambiguity in problem difficulty.
+
+---
+
+## 🖥️ Web Interface
+
+A clean and modern **Streamlit** interface allows users to:
+1. Paste the full problem statement  
+2. Click **Analyze Complexity**  
+3. Instantly view:
+   - Predicted difficulty class  
+   - Predicted difficulty score  
+
+The interface runs locally and is designed for live demonstration.
+
+---
+
+## ⚙️ Steps to Run the Project Locally
+
+### 1️⃣ Install Dependencies
+```bash
+pip install -r requirements.txt
+```
+
+### 2️⃣ Preprocess Dataset
+```bash
+python src/preprocesses.py
+```
+
+### 3️⃣ Train Models
+```bash
+python src/train.py
+```
+
+### 4️⃣ Launch Web Interface
+```bash
+streamlit run app.py
+```
+
+Open in your browser:
+```
+http://localhost:8501
+```
+
+---
+
+## 🎥 Demo Video
+
+**Demo Link:**  
+👉 ( )
+
+The video demonstrates:
+- Project overview  
+- Model approach  
+- Working web interface with predictions  
+
+---
 
 ## 📁 Repository Structure
-```text
-AutoJudge/
-├── data/               # Raw dataset and processed .pkl files
-├── models/             # Saved trained models (classifier, regressor, vectorizer)
+
+```
+AUTOJUDGE/
+│
+├── data/
+│   ├── problems_data.jsonl
+│   └── processed_data.pkl
+│
+├── models/
+│   ├── classifier.pkl
+│   ├── regressor.pkl
+│   └── vectorizer.pkl
+│
+├── requirements/
+│   └── requirements
+│
 ├── src/
-│   ├── preprocesses.py # Data cleaning and feature engineering
-│   ├── train.py        # Model training and evaluation
-│   └── app.py          # Streamlit Web UI
-├── requirements.txt    # Project dependencies
-└── README.md           # Documentation
+│   ├── app.py
+│   ├── preprocesses.py
+│   └── train.py
+│
+├── analyze_scores.py
+├── .gitignore
+└── README.md
+```
+
+---
+
+## 👤 Author
+
+**Soham Adak**  
+IIT Roorkee
