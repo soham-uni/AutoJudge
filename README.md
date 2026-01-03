@@ -113,8 +113,7 @@ python src/train.py
 ---
 ## 🎥 Demo Video
 
-Demo Link:  
-( )
+Demo Link: https://youtu.be/PA4KqOCAP2M
 
 The video demonstrates:
 - Project overview  
