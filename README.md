@@ -6,7 +6,7 @@ AutoJudge is an intelligent machine learning system that automatically predicts 
 
 It predicts:
 - **Problem Class:** Easy / Medium / Hard *(Classification task)*
-- **Problem Score:** A continuous numerical difficulty value *(Regression task)*
+- **Problem Score:** A continuous numerical difficulty value in the range **0–10** *(Regression task)*
 
 The goal is to replicate how online judges (Codeforces, CodeChef, Kattis, etc.) estimate problem difficulty — but automatically, without human feedback.
 
@@ -14,8 +14,12 @@ The goal is to replicate how online judges (Codeforces, CodeChef, Kattis, etc.) 
 
 ## 📂 Dataset Used
 
-A custom dataset of programming problems where each sample contains:
+The dataset is derived from the public benchmark:
 
+**TaskComplexityEval-24**  
+https://github.com/AREEG94FAHAD/TaskComplexityEval-24
+
+Each problem sample contains:
 - title  
 - description  
 - input_description  
@@ -23,62 +27,56 @@ A custom dataset of programming problems where each sample contains:
 - problem_class (Easy / Medium / Hard)  
 - problem_score (numerical difficulty)
 
-Dataset file:
-```
-data/problems_data.jsonl
-```
+After preprocessing, the cleaned dataset is stored locally as:
+
+data/processed_data.pkl
 
 ---
 
 ## 🧠 Approach & Models Used
 
-### 🔹 Data Preprocessing
+### Data Preprocessing
 - Combined all text fields into a single input
 - Text cleaning, normalization, stopword removal, lemmatization
 - Handled missing values
 
-### 🔹 Feature Extraction
+### Feature Extraction
 Each problem is converted into a numerical feature vector using:
-- **TF-IDF Vectorization** (1–3 n-grams)
+- TF-IDF Vectorization (1–3 n-grams)
 - Text length
 - Mathematical symbol frequency
 - Constraint detection (e.g., 10^5, 10^9, etc.)
-- Competitive programming keyword indicators  
-  (graph, dp, tree, greedy, dijkstra, etc.)
+- Competitive programming keyword indicators (graph, dp, tree, greedy, dijkstra, etc.)
 
-### 🔹 Models
+### Models
 
-| Task | Model |
-|-----|------|
-Classification | XGBoost Classifier |
-Regression | XGBoost Regressor |
-Text Representation | TF-IDF Vectorizer |
+Task | Model  
+Classification | XGBoost Classifier  
+Regression | XGBoost Regressor  
+Text Representation | TF-IDF Vectorizer  
 
-To handle class imbalance, **SMOTE (Synthetic Minority Oversampling Technique)** was applied **only to the classifier training set**, improving classification performance significantly.  
-The regression model was trained on the original dataset to preserve the true numeric difficulty distribution.
+To handle class imbalance, SMOTE was applied only to the classifier training set.  
+The regression model was trained on the original dataset.
 
 ---
 
 ## 📊 Evaluation Metrics
 
-### 🧪 Classification
-- **Accuracy:** ~67%  
-- Major improvement after SMOTE (previously ~55%)
+Classification:
+- Accuracy: ~67%
 
-### 📐 Regression
-- **MAE:** 1.67  
-- **RMSE:** 2.00
+Regression:
+- MAE: 1.67  
+- RMSE: 2.00  
 
-The classifier and regressor are trained independently as required.  
-Near class boundaries, the two models may disagree — reflecting real ambiguity in problem difficulty.
-
+The classifier and regressor are trained independently.  
 ---
 
 ## 🖥️ Web Interface
 
-A clean and modern **Streamlit** interface allows users to:
+A clean and modern Streamlit interface allows users to:
 1. Paste the full problem statement  
-2. Click **Analyze Complexity**  
+2. Click Analyze Complexity  
 3. Instantly view:
    - Predicted difficulty class  
    - Predicted difficulty score  
@@ -88,25 +86,16 @@ The interface runs locally and is designed for live demonstration.
 ---
 
 ## ⚙️ Steps to Run the Project Locally
+> Pre-trained models are already included in this repository.
 
 ### 1️⃣ Install Dependencies
 ```bash
-pip install -r requirements.txt
+pip install -r requirements/requirements
 ```
 
-### 2️⃣ Preprocess Dataset
+### 2️⃣ Launch Web Interface
 ```bash
-python src/preprocesses.py
-```
-
-### 3️⃣ Train Models
-```bash
-python src/train.py
-```
-
-### 4️⃣ Launch Web Interface
-```bash
-streamlit run app.py
+streamlit run src/app.py
 ```
 
 Open in your browser:
@@ -114,12 +103,18 @@ Open in your browser:
 http://localhost:8501
 ```
 
----
+### 🧪 Optional: Retraining the Models
 
+```bash
+python src/preprocesses.py
+python src/train.py
+```
+
+---
 ## 🎥 Demo Video
 
-**Demo Link:**  
-👉 ( )
+Demo Link:  
+( )
 
 The video demonstrates:
 - Project overview  
@@ -130,9 +125,8 @@ The video demonstrates:
 
 ## 📁 Repository Structure
 
-```
+```text
 AUTOJUDGE/
-│
 ├── data/
 │   ├── problems_data.jsonl
 │   └── processed_data.pkl
@@ -144,6 +138,7 @@ AUTOJUDGE/
 │
 ├── requirements/
 │   └── requirements
+├── results/
 │
 ├── src/
 │   ├── app.py
@@ -159,5 +154,5 @@ AUTOJUDGE/
 
 ## 👤 Author
 
-**Soham Adak**  
+Soham Adak  
 IIT Roorkee
